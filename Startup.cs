@@ -21,12 +21,15 @@ namespace markspace
                 if (Path.HasExtension(context.Request.Path))
                 {
                     await next(context);
+                    return;
                 }
 
                 var potentialPage = getLocalPath(context.Request.Path, env);
                 if (File.Exists(potentialPage))
                 {
                     var content = await File.ReadAllTextAsync(potentialPage);
+
+                    context.Response.StatusCode = StatusCodes.Status200OK;
                     await context.Response.WriteAsync(await GeneratePage(GetHtml(content), env));
                     return;
                 }
@@ -38,9 +41,17 @@ namespace markspace
 
             app.Use(next => async context =>
             {
+                if (Path.HasExtension(context.Request.Path))
+                {
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    await context.Response.WriteAsync(string.Empty);
+                    return;
+                }
+
                 var content = await File.ReadAllTextAsync(GetNotFoundPath(env));
+
+                context.Response.StatusCode = StatusCodes.Status200OK;
                 await context.Response.WriteAsync(await GeneratePage(GetHtml(content), env));
-                return;
             });
         }
 
